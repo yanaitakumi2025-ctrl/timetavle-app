@@ -16,6 +16,7 @@ const editModeBtn = document.getElementById("editModeBtn");
 const courseTitle = document.getElementById("courseTitle");
 
 const courseForm = document.getElementById("courseForm");
+const mobileView = document.getElementById("mobileView");
 
 let editMode = false;
 
@@ -40,7 +41,6 @@ const dayMap = {
   "金": "fri"
 };
 
-// 7色パレット
 const COLORS = [
   "#FFCDD2", "#C8E6C9", "#BBDEFB",
   "#FFF9C4", "#E1BEE7", "#FFE0B2", "#CFD8DC"
@@ -91,7 +91,7 @@ function resetWeeklyTasks() {
   });
 }
 
-// ★ 時間割テーブル（授業名＋7色選択）
+// PC版テーブル UI
 function createTable() {
   timetableBody.innerHTML = "";
 
@@ -111,12 +111,10 @@ function createTable() {
           c => dayMap[c.day] === day && c.period === i
         );
 
-        // 授業名 input
         const input = document.createElement("input");
         input.className = "cellInput";
         input.value = course ? course.name : "";
 
-        // 色選択パレット
         const palette = document.createElement("div");
         palette.className = "colorPalette";
 
@@ -154,7 +152,6 @@ function createTable() {
           palette.appendChild(btn);
         });
 
-        // 授業名変更
         input.addEventListener("change", () => {
           const name = input.value.trim();
           const jpDay = Object.keys(dayMap).find(k => dayMap[k] === day);
@@ -169,7 +166,7 @@ function createTable() {
               name,
               day: jpDay,
               period: i,
-              color: course ? course.color : COLORS[2] // デフォルト青
+              color: course ? course.color : COLORS[2]
             });
           }
 
@@ -188,44 +185,46 @@ function createTable() {
   }
 }
 
-// 完了済み課題
-function renderCompleted() {
-  completedList.innerHTML = "";
+// スマホ専用 UI
+function renderMobile() {
+  mobileView.innerHTML = "";
 
-  data.tasks.forEach(task => {
-    if (task.type === "single" && task.completed) {
-      const li = document.createElement("li");
+  const days = ["月","火","水","木","金"];
 
-      const span = document.createElement("span");
-      span.textContent = task.title;
+  days.forEach(day => {
+    const card = document.createElement("div");
+    card.className = "dayCard";
 
-      const backBtn = document.createElement("button");
-      backBtn.textContent = "戻す";
-      backBtn.onclick = () => {
-        task.completed = false;
-        task.completedAt = null;
-        save();
-        renderAll();
-      };
+    const title = document.createElement("div");
+    title.className = "dayTitle";
+    title.textContent = `${day}曜日`;
+    card.appendChild(title);
 
-      const deleteBtn = document.createElement("button");
-      deleteBtn.textContent = "削除";
-      deleteBtn.onclick = () => {
-        data.tasks = data.tasks.filter(t => t.id !== task.id);
-        save();
-        renderAll();
-      };
+    data.courses
+      .filter(c => c.day === day)
+      .sort((a,b) => a.period - b.period)
+      .forEach(course => {
+        const div = document.createElement("div");
+        div.className = "courseCard";
+        div.style.background = course.color;
+        div.textContent = `${course.period}限：${course.name}`;
+        card.appendChild(div);
 
-      li.appendChild(span);
-      li.appendChild(backBtn);
-      li.appendChild(deleteBtn);
+        data.tasks
+          .filter(t => t.courseId == course.id)
+          .forEach(task => {
+            const tdiv = document.createElement("div");
+            tdiv.className = "taskCard";
+            tdiv.textContent = task.title;
+            card.appendChild(tdiv);
+          });
+      });
 
-      completedList.appendChild(li);
-    }
+    mobileView.appendChild(card);
   });
 }
 
-// 時間割描画
+// PC版時間割描画
 function renderTimetable() {
   resetWeeklyTasks();
   createTable();
@@ -245,7 +244,6 @@ function renderTimetable() {
     });
   }
 
-  // 課題は常に表示
   data.tasks.forEach(task => {
     const course = data.courses.find(c => c.id == task.courseId);
     if (!course) return;
@@ -288,7 +286,17 @@ function renderTimetable() {
 // 全体描画
 function renderAll() {
   renderCourses();
-  renderTimetable();
+
+  if (window.innerWidth <= 600) {
+    document.getElementById("timetable").style.display = "none";
+    mobileView.style.display = "block";
+    renderMobile();
+  } else {
+    document.getElementById("timetable").style.display = "table";
+    mobileView.style.display = "none";
+    renderTimetable();
+  }
+
   renderCompleted();
 }
 
@@ -315,7 +323,7 @@ addBtn.addEventListener("click", () => {
   taskTitle.value = "";
 });
 
-// 授業追加（従来機能）
+// 授業追加
 addCourseBtn.addEventListener("click", () => {
   if (!editMode) {
     alert("編集モードでのみ追加できます");
