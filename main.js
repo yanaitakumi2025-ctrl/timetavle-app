@@ -13,22 +13,13 @@ import {
   setDoc
 } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
 
-/*
-  Firebase Console の「アプリを追加 > Web」で出た値をここに貼ってください
-*/
 const firebaseConfig = {
   apiKey: "AIzaSyCdpa0t-S76CKwDpoj--jb1SgUnwlIjSZc",
-
   authDomain: "timetable-74561.firebaseapp.com",
-
   projectId: "timetable-74561",
-
   storageBucket: "timetable-74561.firebasestorage.app",
-
   messagingSenderId: "347609918753",
-
   appId: "1:347609918753:web:5a4b07f4be5075d9296260"
-
 };
 
 const app = initializeApp(firebaseConfig);
@@ -202,6 +193,20 @@ function getTodayDayKey() {
   return map[today] || null;
 }
 
+function getTodayDayKeyFromDate(date) {
+  const day = new Date(date).getDay();
+  const map = {
+    0: "sun",
+    1: "mon",
+    2: "tue",
+    3: "wed",
+    4: "thu",
+    5: "fri",
+    6: "sat"
+  };
+  return map[day] || null;
+}
+
 function getCurrentCourses() {
   return data.courses.filter(course =>
     Number(course.schoolYear) === Number(data.currentYear) &&
@@ -252,22 +257,43 @@ function syncSettingsUI() {
   updateDayOptions();
 }
 
+function startOfDay(date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
 function resetWeeklyTasks() {
-  const now = Date.now();
-  const week = 7 * 24 * 60 * 60 * 1000;
+  const today = startOfDay(new Date());
 
   data.tasks.forEach(task => {
     if (
-      task.type === "weekly" &&
-      task.completed &&
-      task.completedAt &&
-      Number(task.schoolYear) === Number(data.currentYear) &&
-      (task.term === data.currentTerm || task.term === "通年")
+      task.type !== "weekly" ||
+      !task.completed ||
+      !task.completedAt ||
+      Number(task.schoolYear) !== Number(data.currentYear) ||
+      !(task.term === data.currentTerm || task.term === "通年")
     ) {
-      if (now - task.completedAt >= week) {
+      return;
+    }
+
+    const course = data.courses.find(c => Number(c.id) === Number(task.courseId));
+    if (!course) return;
+
+    const checkedDate = startOfDay(new Date(task.completedAt));
+    if (today <= checkedDate) return;
+
+    const taskDayKey = dayMap[course.day];
+    let cursor = new Date(checkedDate);
+    cursor.setDate(cursor.getDate() + 1);
+
+    while (cursor <= today) {
+      if (getTodayDayKeyFromDate(cursor) === taskDayKey) {
         task.completed = false;
         task.completedAt = null;
+        break;
       }
+      cursor.setDate(cursor.getDate() + 1);
     }
   });
 }
@@ -300,7 +326,9 @@ function renderCourses() {
   const currentCourses = getCurrentCourses()
     .filter(course => visibleDays.includes(course.day))
     .sort((a, b) => {
-      const dayDiff = getVisibleJapaneseDays().indexOf(a.day) - getVisibleJapaneseDays().indexOf(b.day);
+      const dayDiff =
+        getVisibleJapaneseDays().indexOf(a.day) -
+        getVisibleJapaneseDays().indexOf(b.day);
       if (dayDiff !== 0) return dayDiff;
       return Number(a.period) - Number(b.period);
     });
