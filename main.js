@@ -45,6 +45,16 @@ const dayMap = {
   "金": "fri"
 };
 
+const reverseDayMap = {
+  mon: "月",
+  tue: "火",
+  wed: "水",
+  thu: "木",
+  fri: "金"
+};
+
+const dayOrder = ["mon", "tue", "wed", "thu", "fri"];
+
 const COLORS = [
   "#FFCDD2",
   "#C8E6C9",
@@ -54,6 +64,39 @@ const COLORS = [
   "#FFE0B2",
   "#CFD8DC"
 ];
+
+function getTodayDayKey() {
+  const today = new Date().getDay();
+  const map = {
+    1: "mon",
+    2: "tue",
+    3: "wed",
+    4: "thu",
+    5: "fri"
+  };
+  return map[today] || null;
+}
+
+function deleteTask(taskId) {
+  data.tasks = data.tasks.filter(task => task.id !== taskId);
+  save();
+  renderAll();
+}
+
+function createDeleteTaskButton(taskId) {
+  const deleteBtn = document.createElement("button");
+  deleteBtn.textContent = "削除";
+  deleteBtn.className = "taskDeleteBtn";
+  deleteBtn.type = "button";
+
+  deleteBtn.addEventListener("click", event => {
+    event.preventDefault();
+    event.stopPropagation();
+    deleteTask(taskId);
+  });
+
+  return deleteBtn;
+}
 
 // 表示切り替え
 switchViewBtn.addEventListener("click", () => {
@@ -115,6 +158,28 @@ function resetWeeklyTasks() {
 // PC版テーブル作成
 function createTable() {
   timetableBody.innerHTML = "";
+  const todayKey = getTodayDayKey();
+
+  const headerRow = document.createElement("tr");
+
+  const cornerTh = document.createElement("th");
+  cornerTh.textContent = "時限";
+  cornerTh.className = "periodHeader";
+  headerRow.appendChild(cornerTh);
+
+  dayOrder.forEach(day => {
+    const th = document.createElement("th");
+    th.textContent = `${reverseDayMap[day]}曜日`;
+    th.className = "dayHeader";
+
+    if (day === todayKey) {
+      th.classList.add("todayHeader");
+    }
+
+    headerRow.appendChild(th);
+  });
+
+  timetableBody.appendChild(headerRow);
 
   for (let i = 1; i <= 5; i++) {
     const row = document.createElement("tr");
@@ -123,9 +188,13 @@ function createTable() {
     th.textContent = `${i}限`;
     row.appendChild(th);
 
-    ["mon", "tue", "wed", "thu", "fri"].forEach(day => {
+    dayOrder.forEach(day => {
       const td = document.createElement("td");
       td.id = `${day}-${i}`;
+
+      if (day === todayKey) {
+        td.classList.add("todayColumn");
+      }
 
       if (editMode) {
         const course = data.courses.find(
@@ -212,14 +281,25 @@ function renderMobile() {
   mobileView.innerHTML = "";
 
   const days = ["月", "火", "水", "木", "金"];
+  const todayKey = getTodayDayKey();
 
   days.forEach(day => {
     const dayCard = document.createElement("div");
     dayCard.className = "dayCard";
 
+    if (dayMap[day] === todayKey) {
+      dayCard.classList.add("todayDayCard");
+    }
+
     const title = document.createElement("div");
     title.className = "dayTitle";
     title.textContent = `${day}曜日`;
+
+    if (dayMap[day] === todayKey) {
+      title.classList.add("todayDayTitle");
+      title.textContent = `★ ${day}曜日`;
+    }
+
     dayCard.appendChild(title);
 
     for (let period = 1; period <= 5; period++) {
@@ -342,6 +422,10 @@ function renderMobile() {
             taskCard.appendChild(checkbox);
             taskCard.appendChild(span);
 
+            if (editMode && task.type === "weekly") {
+              taskCard.appendChild(createDeleteTaskButton(task.id));
+            }
+
             courseCard.appendChild(taskCard);
           });
       }
@@ -409,6 +493,10 @@ function renderTimetable() {
 
     div.appendChild(checkbox);
     div.appendChild(span);
+
+    if (editMode && task.type === "weekly") {
+      div.appendChild(createDeleteTaskButton(task.id));
+    }
 
     cell.appendChild(div);
   });
