@@ -1,0 +1,171 @@
+/* ===========================
+   基本レイアウト（PC）
+=========================== */
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #f5f7fb;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+h1 {
+  text-align: center;
+}
+
+h2 {
+  margin-top: 30px;
+}
+
+/* フォーム */
+.form {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: white;
+  padding: 15px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+input, select, button {
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+}
+
+button {
+  background: #4f46e5;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+/* テーブル */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+th {
+  background: #eef2ff;
+  padding: 10px;
+}
+
+td {
+  height: 100px;
+  vertical-align: top;
+  padding: 6px;
+  border: 1px solid #eee;
+}
+
+/* 課題 */
+.task {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 5px;
+  padding: 5px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.hidden {
+  display: none;
+}
+
+/* 色パレット */
+.colorPalette {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.colorBtn {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 1px solid #999;
+  flex-shrink: 0;
+}
+
+/* 授業名 input（幅固定） */
+.cellInput {
+  width: 120px;
+  height: 28px;
+  box-sizing: border-box;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* ===========================
+   スマホ対応（600px 以下）
+=========================== */
+
+@media (max-width: 600px) {
+
+  /* テーブルを横スクロール可能にする */
+  table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  th, td {
+    min-width: 80px;
+    height: 80px;
+    padding: 4px;
+  }
+
+  /* 授業名 input をスマホ用に縮める */
+  .cellInput {
+    width: 90px;
+    font-size: 12px;
+  }
+
+  /* 色ボタンを少し小さく */
+  .colorBtn {
+    width: 16px;
+    height: 16px;
+  }
+
+  .colorPalette {
+    gap: 2px;
+  }
+
+  /* フォームを縦並びに */
+  .form {
+    flex-direction: column;
+  }
+
+  /* スマホでタップしやすいようにセルを少し広めに */
+  td {
+    height: 90px;
+  }
+
+  /* スワイプしやすいように余白追加 */
+  body {
+    padding: 10px;
+  }
+}
+
+/* ===========================
+   スマホ：input タップで拡大
+=========================== */
+
+.cellInput:focus {
+  position: relative;
+  z-index: 10;
+  background: #fff;
+  width: 150px;     /* ← タップ時だけ広くなる */
+  height: auto;
+  white-space: normal;
+  overflow: visible;
+}

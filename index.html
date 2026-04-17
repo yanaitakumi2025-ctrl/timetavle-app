@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4f46e5">
+
+<script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("service-worker.js");
+  }
+</script>
+
+  <meta charset="UTF-8">
+  <title>時間割課題管理</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<h1>時間割課題管理</h1>
+
+<h2>課題追加</h2>
+<div class="form">
+  <input id="taskTitle" placeholder="例：英語レポート">
+  <select id="courseSelect"></select>
+
+  <select id="taskType">
+    <option value="single">📌 単発課題</option>
+    <option value="weekly">🗓 週間課題</option>
+  </select>
+
+  <button id="addTaskBtn">追加</button>
+</div>
+
+<h2 id="courseTitle">授業追加</h2>
+<div class="form" id="courseForm">
+  <input id="courseName" placeholder="授業名">
+  
+  <select id="courseDay">
+    <option value="月">月</option>
+    <option value="火">火</option>
+    <option value="水">水</option>
+    <option value="木">木</option>
+    <option value="金">金</option>
+  </select>
+
+  <select id="coursePeriod">
+    <option value="1">1限</option>
+    <option value="2">2限</option>
+    <option value="3">3限</option>
+    <option value="4">4限</option>
+    <option value="5">5限</option>
+  </select>
+
+  <select id="courseColor">
+    <option value="#FFCDD2">🔴</option>
+    <option value="#C8E6C9">🟢</option>
+    <option value="#BBDEFB">🔵</option>
+    <option value="#FFF9C4">🟡</option>
+    <option value="#E1BEE7">🟣</option>
+    <option value="#FFE0B2">🟠</option>
+    <option value="#CFD8DC">⚪</option>
+  </select>
+
+  <button id="addCourseBtn">追加</button>
+</div>
+
+<h2>時間割</h2>
+<button id="editModeBtn">編集モード OFF</button>
+<table>
+  <tr>
+    <th></th>
+    <th>月</th><th>火</th><th>水</th><th>木</th><th>金</th>
+  </tr>
+  <tbody id="timetableBody"></tbody>
+</table>
+
+<h2>✅ 完了済み課題</h2>
+<ul id="completedList"></ul>
+
+<script src="main.js"></script>
+</body>
+</html>
