@@ -2,59 +2,63 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>時間割アプリ</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<h1>時間割アプリ</h1>
+  <h1>時間割アプリ</h1>
 
-<!-- UI切り替えボタン -->
-<button id="switchViewBtn">スマホ版に切り替え</button>
+  <button id="switchViewBtn">スマホ版に切り替え</button>
+  <button id="editModeBtn">編集モード OFF</button>
 
-<!-- 編集モード -->
-<button id="editModeBtn">編集モード OFF</button>
+  <h2 id="courseTitle" style="display:none;">授業追加</h2>
 
-<h2 id="courseTitle" style="display:none;">授業追加</h2>
+  <div id="courseForm" style="display:none;">
+    <input id="courseName" placeholder="授業名">
+    <select id="courseDay">
+      <option>月</option>
+      <option>火</option>
+      <option>水</option>
+      <option>木</option>
+      <option>金</option>
+    </select>
+    <select id="coursePeriod">
+      <option>1</option>
+      <option>2</option>
+      <option>3</option>
+      <option>4</option>
+      <option>5</option>
+    </select>
+    <input id="courseColor" type="color" value="#BBDEFB">
+    <button id="addCourseBtn">追加</button>
+  </div>
 
-<div id="courseForm" style="display:none;">
-  <input id="courseName" placeholder="授業名">
-  <select id="courseDay">
-    <option>月</option><option>火</option><option>水</option><option>木</option><option>金</option>
-  </select>
-  <select id="coursePeriod">
-    <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
-  </select>
-  <input id="courseColor" type="color" value="#BBDEFB">
-  <button id="addCourseBtn">追加</button>
-</div>
+  <h2>課題追加</h2>
+  <div>
+    <select id="courseSelect"></select>
+    <input id="taskTitle" placeholder="課題名">
+    <select id="taskType">
+      <option value="single">単発</option>
+      <option value="weekly">毎週</option>
+    </select>
+    <button id="addTaskBtn">追加</button>
+  </div>
 
-<h2>課題追加</h2>
-<div>
-  <select id="courseSelect"></select>
-  <input id="taskTitle" placeholder="課題名">
-  <select id="taskType">
-    <option value="single">単発</option>
-    <option value="weekly">毎週</option>
-  </select>
-  <button id="addTaskBtn">追加</button>
-</div>
+  <h2>時間割（PC版）</h2>
+  <div id="timetable">
+    <table>
+      <tbody id="timetableBody"></tbody>
+    </table>
+  </div>
 
-<!-- PC版時間割 -->
-<h2>時間割（PC版）</h2>
-<div id="timetable">
-  <table>
-    <tbody id="timetableBody"></tbody>
-  </table>
-</div>
+  <h2>スマホ版（縦カード）</h2>
+  <div id="mobileView" style="display:none;"></div>
 
-<!-- スマホ版UI -->
-<h2>スマホ版（縦カード）</h2>
-<div id="mobileView" style="display:none;"></div>
+  <h2>完了済み課題</h2>
+  <ul id="completedList"></ul>
 
-<h2>完了済み課題</h2>
-<ul id="completedList"></ul>
-
-<script src="main.js"></script>
+  <script src="main.js"></script>
 </body>
 </html>
