@@ -16,12 +16,12 @@ const editModeBtn = document.getElementById("editModeBtn");
 const courseTitle = document.getElementById("courseTitle");
 
 const courseForm = document.getElementById("courseForm");
-const mobileView = document.getElementById("mobileView");
 
+const mobileView = document.getElementById("mobileView");
 const switchViewBtn = document.getElementById("switchViewBtn");
 
 let editMode = false;
-let mobileMode = false; // ← 手動切り替え用
+let mobileMode = false; // ← 手動切り替え
 
 let data = JSON.parse(localStorage.getItem("data")) || {
   courses: [],
@@ -49,7 +49,9 @@ const COLORS = [
   "#FFF9C4", "#E1BEE7", "#FFE0B2", "#CFD8DC"
 ];
 
+// -----------------------------
 // 表示切り替えボタン
+// -----------------------------
 switchViewBtn.addEventListener("click", () => {
   mobileMode = !mobileMode;
 
@@ -60,7 +62,9 @@ switchViewBtn.addEventListener("click", () => {
   renderAll();
 });
 
-// 編集モード切替
+// -----------------------------
+// 編集モード
+// -----------------------------
 editModeBtn.addEventListener("click", () => {
   editMode = !editMode;
 
@@ -79,7 +83,9 @@ editModeBtn.addEventListener("click", () => {
   renderAll();
 });
 
+// -----------------------------
 // 授業セレクト更新
+// -----------------------------
 function renderCourses() {
   courseSelect.innerHTML = "";
   data.courses.forEach(c => {
@@ -90,7 +96,9 @@ function renderCourses() {
   });
 }
 
+// -----------------------------
 // 週間課題リセット
+// -----------------------------
 function resetWeeklyTasks() {
   const now = Date.now();
   const week = 7 * 24 * 60 * 60 * 1000;
@@ -105,7 +113,9 @@ function resetWeeklyTasks() {
   });
 }
 
-// PC版テーブル UI
+// -----------------------------
+// PC版テーブル UI（元コードそのまま）
+// -----------------------------
 function createTable() {
   timetableBody.innerHTML = "";
 
@@ -199,7 +209,9 @@ function createTable() {
   }
 }
 
-// スマホ専用 UI（縦カード）
+// -----------------------------
+// スマホ版（縦カード UI）
+// -----------------------------
 function renderMobile() {
   mobileView.innerHTML = "";
 
@@ -228,12 +240,44 @@ function renderMobile() {
         courseTitle.textContent = `${course.period}限：${course.name}`;
         courseCard.appendChild(courseTitle);
 
+        // --- スマホ版は ✏️ 編集ボタンのみ ---
+        const editBtn = document.createElement("button");
+        editBtn.textContent = "✏️ 編集";
+        editBtn.style.marginTop = "6px";
+        editBtn.style.background = "#333";
+        editBtn.style.fontSize = "14px";
+
+        editBtn.addEventListener("click", () => {
+          showMobileEdit(course);
+        });
+
+        courseCard.appendChild(editBtn);
+
+        // --- 課題 ---
         data.tasks
           .filter(t => t.courseId == course.id)
           .forEach(task => {
             const taskCard = document.createElement("div");
             taskCard.className = "taskCard";
-            taskCard.textContent = task.title;
+
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.checked = task.completed;
+
+            checkbox.addEventListener("change", () => {
+              task.completed = checkbox.checked;
+              task.completedAt = checkbox.checked ? Date.now() : null;
+              save();
+              renderAll();
+            });
+
+            const span = document.createElement("span");
+            span.textContent = task.title;
+            span.style.marginLeft = "8px";
+
+            taskCard.appendChild(checkbox);
+            taskCard.appendChild(span);
+
             courseCard.appendChild(taskCard);
           });
 
@@ -244,7 +288,79 @@ function renderMobile() {
   });
 }
 
-// PC版時間割描画
+// -----------------------------
+// スマホ版授業編集画面
+// -----------------------------
+function showMobileEdit(course) {
+  mobileView.innerHTML = "";
+
+  const box = document.createElement("div");
+  box.className = "dayCard";
+
+  const title = document.createElement("div");
+  title.className = "dayTitle";
+  title.textContent = `${course.day}曜日 ${course.period}限 編集`;
+  box.appendChild(title);
+
+  const nameInput = document.createElement("input");
+  nameInput.value = course.name;
+  nameInput.style.marginBottom = "12px";
+  box.appendChild(nameInput);
+
+  const palette = document.createElement("div");
+  palette.className = "colorPalette";
+
+  let selectedColor = course.color;
+
+  COLORS.forEach(color => {
+    const btn = document.createElement("div");
+    btn.className = "colorBtn";
+    btn.style.background = color;
+
+    if (color === selectedColor) {
+      btn.style.outline = "3px solid black";
+    }
+
+    btn.addEventListener("click", () => {
+      selectedColor = color;
+      showMobileEdit(course);
+    });
+
+    palette.appendChild(btn);
+  });
+
+  box.appendChild(palette);
+
+  const saveBtn = document.createElement("button");
+  saveBtn.textContent = "保存";
+  saveBtn.style.marginTop = "14px";
+
+  saveBtn.addEventListener("click", () => {
+    course.name = nameInput.value.trim();
+    course.color = selectedColor;
+    save();
+    renderAll();
+  });
+
+  box.appendChild(saveBtn);
+
+  const backBtn = document.createElement("button");
+  backBtn.textContent = "戻る";
+  backBtn.style.background = "#777";
+  backBtn.style.marginTop = "10px";
+
+  backBtn.addEventListener("click", () => {
+    renderAll();
+  });
+
+  box.appendChild(backBtn);
+
+  mobileView.appendChild(box);
+}
+
+// -----------------------------
+// PC版時間割描画（元コード）
+// -----------------------------
 function renderTimetable() {
   resetWeeklyTasks();
   createTable();
@@ -303,24 +419,76 @@ function renderTimetable() {
   });
 }
 
-// 全体描画
+// -----------------------------
+// 全体描画（スマホ版はセル編集UIを出さない）
+// -----------------------------
 function renderAll() {
   renderCourses();
 
   if (mobileMode) {
+    // スマホ版：PCのテーブルは完全に非表示
     document.getElementById("timetable").style.display = "none";
     mobileView.style.display = "block";
+
+    // スマホ版は createTable() を絶対に呼ばない
     renderMobile();
+
   } else {
-    document.getElementById("timetable").style.display = "table";
+    // PC版
+    document.getElementById("timetable").style.display = "block";
     mobileView.style.display = "none";
+
+    // PC版のみ createTable() を使う
     renderTimetable();
   }
 
   renderCompleted();
 }
 
+
+
+// -----------------------------
+// 完了済み課題
+// -----------------------------
+function renderCompleted() {
+  completedList.innerHTML = "";
+
+  data.tasks.forEach(task => {
+    if (task.type === "single" && task.completed) {
+      const li = document.createElement("li");
+
+      const span = document.createElement("span");
+      span.textContent = task.title;
+
+      const backBtn = document.createElement("button");
+      backBtn.textContent = "戻す";
+      backBtn.onclick = () => {
+        task.completed = false;
+        task.completedAt = null;
+        save();
+        renderAll();
+      };
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.textContent = "削除";
+      deleteBtn.onclick = () => {
+        data.tasks = data.tasks.filter(t => t.id !== task.id);
+        save();
+        renderAll();
+      };
+
+      li.appendChild(span);
+      li.appendChild(backBtn);
+      li.appendChild(deleteBtn);
+
+      completedList.appendChild(li);
+    }
+  });
+}
+
+// -----------------------------
 // 課題追加
+// -----------------------------
 addBtn.addEventListener("click", () => {
   const title = taskTitle.value.trim();
   const courseId = Number(courseSelect.value);
@@ -343,7 +511,9 @@ addBtn.addEventListener("click", () => {
   taskTitle.value = "";
 });
 
+// -----------------------------
 // 授業追加
+// -----------------------------
 addCourseBtn.addEventListener("click", () => {
   if (!editMode) {
     alert("編集モードでのみ追加できます");
@@ -378,5 +548,7 @@ addCourseBtn.addEventListener("click", () => {
   renderAll();
 });
 
+// -----------------------------
 // 初期描画
+// -----------------------------
 renderAll();
