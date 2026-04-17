@@ -10,33 +10,64 @@
 
   <h1>時間割アプリ</h1>
 
-  <button id="switchViewBtn">スマホ版に切り替え</button>
-  <button id="editModeBtn">編集モード OFF</button>
+  <div id="authBox">
+    <span id="userInfo">未ログイン</span>
+    <button id="loginBtn">Googleでログイン</button>
+    <button id="logoutBtn" style="display:none;">ログアウト</button>
+  </div>
+
+  <div class="topButtons">
+    <button id="switchViewBtn">スマホ版に切り替え</button>
+    <button id="editModeBtn">編集モード OFF</button>
+  </div>
+
+  <h2>年度・学期</h2>
+  <div id="termBox">
+    <select id="schoolYearSelect"></select>
+    <select id="termSelect">
+      <option value="前期">前期</option>
+      <option value="後期">後期</option>
+      <option value="通年">通年</option>
+    </select>
+  </div>
+
+  <h2>表示設定</h2>
+  <div id="settingsBox">
+    <label class="settingItem">
+      <input type="checkbox" id="showSaturday">
+      土曜授業を表示
+    </label>
+    <label class="settingItem">
+      <input type="checkbox" id="showSunday">
+      日曜授業を表示
+    </label>
+  </div>
 
   <h2 id="courseTitle" style="display:none;">授業追加</h2>
-
   <div id="courseForm" style="display:none;">
     <input id="courseName" placeholder="授業名">
     <select id="courseDay">
-      <option>月</option>
-      <option>火</option>
-      <option>水</option>
-      <option>木</option>
-      <option>金</option>
+      <option value="月">月</option>
+      <option value="火">火</option>
+      <option value="水">水</option>
+      <option value="木">木</option>
+      <option value="金">金</option>
+      <option value="土" id="courseDaySatOption" style="display:none;">土</option>
+      <option value="日" id="courseDaySunOption" style="display:none;">日</option>
     </select>
     <select id="coursePeriod">
-      <option>1</option>
-      <option>2</option>
-      <option>3</option>
-      <option>4</option>
-      <option>5</option>
+      <option value="1">1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+      <option value="4">4</option>
+      <option value="5">5</option>
     </select>
     <input id="courseColor" type="color" value="#BBDEFB">
     <button id="addCourseBtn">追加</button>
   </div>
 
   <h2>課題追加</h2>
-  <div>
+  <div id="taskForm">
     <select id="courseSelect"></select>
     <input id="taskTitle" placeholder="課題名">
     <select id="taskType">
@@ -59,6 +90,6 @@
   <h2>完了済み課題</h2>
   <ul id="completedList"></ul>
 
-  <script src="main.js"></script>
+  <script type="module" src="main.js"></script>
 </body>
 </html>
