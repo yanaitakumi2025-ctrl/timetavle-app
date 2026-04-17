@@ -18,7 +18,10 @@ const courseTitle = document.getElementById("courseTitle");
 const courseForm = document.getElementById("courseForm");
 const mobileView = document.getElementById("mobileView");
 
+const switchViewBtn = document.getElementById("switchViewBtn");
+
 let editMode = false;
+let mobileMode = false; // ← 手動切り替え用
 
 let data = JSON.parse(localStorage.getItem("data")) || {
   courses: [],
@@ -45,6 +48,17 @@ const COLORS = [
   "#FFCDD2", "#C8E6C9", "#BBDEFB",
   "#FFF9C4", "#E1BEE7", "#FFE0B2", "#CFD8DC"
 ];
+
+// 表示切り替えボタン
+switchViewBtn.addEventListener("click", () => {
+  mobileMode = !mobileMode;
+
+  switchViewBtn.textContent = mobileMode
+    ? "PC版に切り替え"
+    : "スマホ版に切り替え";
+
+  renderAll();
+});
 
 // 編集モード切替
 editModeBtn.addEventListener("click", () => {
@@ -185,7 +199,7 @@ function createTable() {
   }
 }
 
-// スマホ専用 UI
+// スマホ専用 UI（縦カード）
 function renderMobile() {
   mobileView.innerHTML = "";
 
@@ -200,13 +214,11 @@ function renderMobile() {
     title.textContent = `${day}曜日`;
     dayCard.appendChild(title);
 
-    // 授業を period 順に並べる
     data.courses
       .filter(c => c.day === day)
       .sort((a, b) => a.period - b.period)
       .forEach(course => {
 
-        // 授業カード
         const courseCard = document.createElement("div");
         courseCard.className = "courseCard";
         courseCard.style.background = course.color;
@@ -216,7 +228,6 @@ function renderMobile() {
         courseTitle.textContent = `${course.period}限：${course.name}`;
         courseCard.appendChild(courseTitle);
 
-        // 課題を縦に積む
         data.tasks
           .filter(t => t.courseId == course.id)
           .forEach(task => {
@@ -232,7 +243,6 @@ function renderMobile() {
     mobileView.appendChild(dayCard);
   });
 }
-
 
 // PC版時間割描画
 function renderTimetable() {
@@ -297,7 +307,7 @@ function renderTimetable() {
 function renderAll() {
   renderCourses();
 
-  if (window.innerWidth <= 600) {
+  if (mobileMode) {
     document.getElementById("timetable").style.display = "none";
     mobileView.style.display = "block";
     renderMobile();
