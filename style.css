@@ -21,6 +21,34 @@ h2 {
   margin-bottom: 12px;
 }
 
+#authBox,
+.topButtons,
+#courseForm,
+#taskForm,
+#termBox,
+#settingsBox {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+#authBox,
+#termBox,
+#settingsBox {
+  background: white;
+  padding: 14px 16px;
+  border-radius: 14px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+}
+
+#userInfo {
+  font-weight: 600;
+  word-break: break-word;
+  display: flex;
+  align-items: center;
+}
+
 button {
   background: #4a90e2;
   color: white;
@@ -49,69 +77,72 @@ select {
   background: white;
 }
 
-#courseForm,
-.form,
-body > div {
+.settingItem {
   display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 12px;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.settingItem input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: #4a90e2;
 }
 
 /* PC版 */
+#timetable {
+  overflow-x: auto;
+}
+
 #timetable table {
   width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
+  min-width: 720px;
+  table-layout: fixed;
+  border-collapse: collapse;
   background: white;
   border-radius: 14px;
   overflow: hidden;
   box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  border: 2px solid #bfc7d1;
 }
 
 td,
 th {
-  border-bottom: 1px solid #eee;
-  border-right: 1px solid #eee;
-  padding: 12px;
+  border: 1.5px solid #bfc7d1;
+  padding: 10px;
   text-align: center;
   vertical-align: top;
-}
-
-tr:last-child td,
-tr:last-child th {
-  border-bottom: none;
-}
-
-td:last-child,
-th:last-child {
-  border-right: none;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 th {
-  background: #f0f3f7;
-  font-weight: 600;
+  background: #e9eef5;
+  font-weight: 700;
   font-size: 15px;
-  min-width: 80px;
-}
-
-td {
-  min-height: 120px;
-  height: 120px;
 }
 
 .periodHeader {
-  background: #e9eef5;
-  font-weight: 700;
+  background: #dfe7f1;
+  font-weight: 800;
+  width: 72px;
 }
 
 .dayHeader {
-  min-width: 88px;
+  background: #eef3f8;
 }
 
 .todayHeader {
   background: #fff4bf;
   font-weight: 800;
+  border: 2px solid #e0b200;
+}
+
+td {
+  height: 140px;
+  min-height: 140px;
 }
 
 .todayColumn {
@@ -143,6 +174,18 @@ td {
   cursor: pointer;
 }
 
+.courseBlock {
+  width: 100%;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.4;
+  border: 1px solid rgba(0,0,0,0.12);
+  padding: 6px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
 .task,
 .taskCard {
   margin-top: 8px;
@@ -154,11 +197,14 @@ td {
   align-items: center;
   gap: 12px;
   line-height: 1.5;
+  border: 1px solid rgba(0,0,0,0.12);
 }
 
 .taskText {
   flex: 1;
   word-break: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
 }
 
 .taskCheckbox {
@@ -190,6 +236,7 @@ td {
   margin-bottom: 18px;
   border-radius: 18px;
   box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+  border: 1px solid #d8e0ea;
 }
 
 .todayDayCard {
@@ -214,6 +261,7 @@ td {
   border-radius: 16px;
   margin-bottom: 14px;
   color: #333;
+  border: 1px solid rgba(0,0,0,0.1);
 }
 
 .courseTitle {
@@ -221,6 +269,9 @@ td {
   font-weight: 700;
   margin-bottom: 10px;
   line-height: 1.4;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .mobilePeriodLabel {
@@ -253,11 +304,13 @@ td {
   gap: 8px;
   align-items: center;
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  border: 1px solid #d8e0ea;
 }
 
 #completedList span {
   flex: 1;
   min-width: 140px;
+  word-break: break-word;
 }
 
 /* スマホ最適化 */
@@ -277,9 +330,12 @@ td {
     margin-bottom: 10px;
   }
 
+  #authBox,
+  .topButtons,
   #courseForm,
-  .form,
-  body > div {
+  #taskForm,
+  #termBox,
+  #settingsBox {
     flex-direction: column;
     align-items: stretch;
     gap: 8px;
@@ -295,6 +351,15 @@ td {
 
   button {
     font-weight: 600;
+  }
+
+  .settingItem {
+    font-size: 16px;
+  }
+
+  .settingItem input[type="checkbox"] {
+    width: 24px;
+    height: 24px;
   }
 
   #mobileView {
