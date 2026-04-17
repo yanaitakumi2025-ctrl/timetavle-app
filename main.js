@@ -1,3 +1,45 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc
+} from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
+
+/*
+  Firebase Console の「アプリを追加 > Web」で出た値をここに貼ってください
+*/
+const firebaseConfig = {
+  apiKey: "AIzaSyCdpa0t-S76CKwDpoj--jb1SgUnwlIjSZc",
+
+  authDomain: "timetable-74561.firebaseapp.com",
+
+  projectId: "timetable-74561",
+
+  storageBucket: "timetable-74561.firebasestorage.app",
+
+  messagingSenderId: "347609918753",
+
+  appId: "1:347609918753:web:5a4b07f4be5075d9296260"
+
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const provider = new GoogleAuthProvider();
+
+const userInfo = document.getElementById("userInfo");
+const loginBtn = document.getElementById("loginBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+
 const courseNameInput = document.getElementById("courseName");
 const courseDayInput = document.getElementById("courseDay");
 const coursePeriodInput = document.getElementById("coursePeriod");
@@ -5,7 +47,6 @@ const courseColorInput = document.getElementById("courseColor");
 const addCourseBtn = document.getElementById("addCourseBtn");
 
 const taskTypeSelect = document.getElementById("taskType");
-
 const courseSelect = document.getElementById("courseSelect");
 const taskTitle = document.getElementById("taskTitle");
 const addBtn = document.getElementById("addTaskBtn");
@@ -20,29 +61,100 @@ const mobileView = document.getElementById("mobileView");
 const switchViewBtn = document.getElementById("switchViewBtn");
 const timetable = document.getElementById("timetable");
 
+const showSaturdayCheckbox = document.getElementById("showSaturday");
+const showSundayCheckbox = document.getElementById("showSunday");
+const courseDaySatOption = document.getElementById("courseDaySatOption");
+const courseDaySunOption = document.getElementById("courseDaySunOption");
+
+const schoolYearSelect = document.getElementById("schoolYearSelect");
+const termSelect = document.getElementById("termSelect");
+
 let editMode = false;
 let mobileMode = false;
+let currentUser = null;
 
-let data = JSON.parse(localStorage.getItem("data")) || {
-  courses: [],
-  tasks: []
-};
-
-function save() {
-  localStorage.setItem("data", JSON.stringify(data));
+function createDefaultData() {
+  return {
+    currentYear: new Date().getFullYear(),
+    currentTerm: "前期",
+    courses: [],
+    tasks: [],
+    settings: {
+      showSaturday: false,
+      showSunday: false
+    }
+  };
 }
 
-// 古いデータ対策
-data.tasks.forEach(task => {
-  if (!task.type) task.type = "single";
-});
+let data = JSON.parse(localStorage.getItem("data")) || createDefaultData();
+
+function normalizeData() {
+  if (!data.settings) {
+    data.settings = {
+      showSaturday: false,
+      showSunday: false
+    };
+  }
+
+  if (!data.currentYear) {
+    data.currentYear = new Date().getFullYear();
+  }
+
+  if (!data.currentTerm) {
+    data.currentTerm = "前期";
+  }
+
+  data.tasks.forEach(task => {
+    if (!task.type) task.type = "single";
+    if (!("completed" in task)) task.completed = false;
+    if (!("completedAt" in task)) task.completedAt = null;
+    if (!task.schoolYear) task.schoolYear = data.currentYear;
+    if (!task.term) task.term = "前期";
+  });
+
+  data.courses.forEach(course => {
+    if (!course.schoolYear) course.schoolYear = data.currentYear;
+    if (!course.term) course.term = "前期";
+  });
+}
+
+normalizeData();
+
+async function loadCloudData(uid) {
+  const ref = doc(db, "users", uid, "timetableApp", "main");
+  const snap = await getDoc(ref);
+
+  if (snap.exists()) {
+    data = snap.data();
+  } else {
+    data = createDefaultData();
+    await setDoc(ref, data);
+  }
+
+  normalizeData();
+}
+
+async function saveCloudData(uid) {
+  const ref = doc(db, "users", uid, "timetableApp", "main");
+  await setDoc(ref, data);
+}
+
+async function save() {
+  if (currentUser) {
+    await saveCloudData(currentUser.uid);
+  } else {
+    localStorage.setItem("data", JSON.stringify(data));
+  }
+}
 
 const dayMap = {
   "月": "mon",
   "火": "tue",
   "水": "wed",
   "木": "thu",
-  "金": "fri"
+  "金": "fri",
+  "土": "sat",
+  "日": "sun"
 };
 
 const reverseDayMap = {
@@ -50,10 +162,10 @@ const reverseDayMap = {
   tue: "火",
   wed: "水",
   thu: "木",
-  fri: "金"
+  fri: "金",
+  sat: "土",
+  sun: "日"
 };
-
-const dayOrder = ["mon", "tue", "wed", "thu", "fri"];
 
 const COLORS = [
   "#FFCDD2",
@@ -65,22 +177,103 @@ const COLORS = [
   "#CFD8DC"
 ];
 
+function getVisibleDays() {
+  const days = ["mon", "tue", "wed", "thu", "fri"];
+  if (data.settings.showSaturday) days.push("sat");
+  if (data.settings.showSunday) days.push("sun");
+  return days;
+}
+
+function getVisibleJapaneseDays() {
+  return getVisibleDays().map(dayKey => reverseDayMap[dayKey]);
+}
+
 function getTodayDayKey() {
   const today = new Date().getDay();
   const map = {
+    0: "sun",
     1: "mon",
     2: "tue",
     3: "wed",
     4: "thu",
-    5: "fri"
+    5: "fri",
+    6: "sat"
   };
   return map[today] || null;
 }
 
+function getCurrentCourses() {
+  return data.courses.filter(course =>
+    Number(course.schoolYear) === Number(data.currentYear) &&
+    (course.term === data.currentTerm || course.term === "通年")
+  );
+}
+
+function getCurrentTasks() {
+  return data.tasks.filter(task =>
+    Number(task.schoolYear) === Number(data.currentYear) &&
+    (task.term === data.currentTerm || task.term === "通年")
+  );
+}
+
+function renderYearOptions() {
+  schoolYearSelect.innerHTML = "";
+
+  const current = new Date().getFullYear();
+  for (let y = current - 1; y <= current + 3; y++) {
+    const option = document.createElement("option");
+    option.value = y;
+    option.textContent = `${y}年度`;
+    if (Number(y) === Number(data.currentYear)) {
+      option.selected = true;
+    }
+    schoolYearSelect.appendChild(option);
+  }
+
+  termSelect.value = data.currentTerm;
+}
+
+function updateDayOptions() {
+  courseDaySatOption.style.display = data.settings.showSaturday ? "block" : "none";
+  courseDaySunOption.style.display = data.settings.showSunday ? "block" : "none";
+
+  if (courseDayInput.value === "土" && !data.settings.showSaturday) {
+    courseDayInput.value = "月";
+  }
+
+  if (courseDayInput.value === "日" && !data.settings.showSunday) {
+    courseDayInput.value = "月";
+  }
+}
+
+function syncSettingsUI() {
+  showSaturdayCheckbox.checked = data.settings.showSaturday;
+  showSundayCheckbox.checked = data.settings.showSunday;
+  updateDayOptions();
+}
+
+function resetWeeklyTasks() {
+  const now = Date.now();
+  const week = 7 * 24 * 60 * 60 * 1000;
+
+  data.tasks.forEach(task => {
+    if (
+      task.type === "weekly" &&
+      task.completed &&
+      task.completedAt &&
+      Number(task.schoolYear) === Number(data.currentYear) &&
+      (task.term === data.currentTerm || task.term === "通年")
+    ) {
+      if (now - task.completedAt >= week) {
+        task.completed = false;
+        task.completedAt = null;
+      }
+    }
+  });
+}
+
 function deleteTask(taskId) {
   data.tasks = data.tasks.filter(task => task.id !== taskId);
-  save();
-  renderAll();
 }
 
 function createDeleteTaskButton(taskId) {
@@ -89,50 +282,30 @@ function createDeleteTaskButton(taskId) {
   deleteBtn.className = "taskDeleteBtn";
   deleteBtn.type = "button";
 
-  deleteBtn.addEventListener("click", event => {
+  deleteBtn.addEventListener("click", async (event) => {
     event.preventDefault();
     event.stopPropagation();
     deleteTask(taskId);
+    await save();
+    renderAll();
   });
 
   return deleteBtn;
 }
 
-// 表示切り替え
-switchViewBtn.addEventListener("click", () => {
-  mobileMode = !mobileMode;
-
-  switchViewBtn.textContent = mobileMode
-    ? "PC版に切り替え"
-    : "スマホ版に切り替え";
-
-  renderAll();
-});
-
-// 編集モード
-editModeBtn.addEventListener("click", () => {
-  editMode = !editMode;
-
-  editModeBtn.textContent = editMode ? "編集モード ON" : "編集モード OFF";
-  editModeBtn.style.background = editMode ? "red" : "";
-
-  courseNameInput.disabled = !editMode;
-  courseDayInput.disabled = !editMode;
-  coursePeriodInput.disabled = !editMode;
-  courseColorInput.disabled = !editMode;
-  addCourseBtn.disabled = !editMode;
-
-  courseForm.style.display = editMode ? "flex" : "none";
-  courseTitle.style.display = editMode ? "block" : "none";
-
-  renderAll();
-});
-
-// 授業セレクト更新
 function renderCourses() {
   courseSelect.innerHTML = "";
 
-  data.courses.forEach(course => {
+  const visibleDays = getVisibleJapaneseDays();
+  const currentCourses = getCurrentCourses()
+    .filter(course => visibleDays.includes(course.day))
+    .sort((a, b) => {
+      const dayDiff = getVisibleJapaneseDays().indexOf(a.day) - getVisibleJapaneseDays().indexOf(b.day);
+      if (dayDiff !== 0) return dayDiff;
+      return Number(a.period) - Number(b.period);
+    });
+
+  currentCourses.forEach(course => {
     const option = document.createElement("option");
     option.value = course.id;
     option.textContent = `${course.name} (${course.day}${course.period})`;
@@ -140,25 +313,10 @@ function renderCourses() {
   });
 }
 
-// 週間課題リセット
-function resetWeeklyTasks() {
-  const now = Date.now();
-  const week = 7 * 24 * 60 * 60 * 1000;
-
-  data.tasks.forEach(task => {
-    if (task.type === "weekly" && task.completed && task.completedAt) {
-      if (now - task.completedAt > week) {
-        task.completed = false;
-        task.completedAt = null;
-      }
-    }
-  });
-}
-
-// PC版テーブル作成
 function createTable() {
   timetableBody.innerHTML = "";
   const todayKey = getTodayDayKey();
+  const visibleDays = getVisibleDays();
 
   const headerRow = document.createElement("tr");
 
@@ -167,7 +325,7 @@ function createTable() {
   cornerTh.className = "periodHeader";
   headerRow.appendChild(cornerTh);
 
-  dayOrder.forEach(day => {
+  visibleDays.forEach(day => {
     const th = document.createElement("th");
     th.textContent = `${reverseDayMap[day]}曜日`;
     th.className = "dayHeader";
@@ -188,7 +346,7 @@ function createTable() {
     th.textContent = `${i}限`;
     row.appendChild(th);
 
-    dayOrder.forEach(day => {
+    visibleDays.forEach(day => {
       const td = document.createElement("td");
       td.id = `${day}-${i}`;
 
@@ -197,8 +355,8 @@ function createTable() {
       }
 
       if (editMode) {
-        const course = data.courses.find(
-          c => dayMap[c.day] === day && c.period === i
+        const course = getCurrentCourses().find(
+          c => dayMap[c.day] === day && Number(c.period) === i
         );
 
         const input = document.createElement("input");
@@ -218,12 +376,17 @@ function createTable() {
             btn.style.outline = "3px solid black";
           }
 
-          btn.addEventListener("click", () => {
+          btn.addEventListener("click", async () => {
             const name = input.value.trim();
-            const jpDay = Object.keys(dayMap).find(k => dayMap[k] === day);
+            const jpDay = reverseDayMap[day];
 
             data.courses = data.courses.filter(
-              c => !(c.day === jpDay && c.period === i)
+              c => !(
+                Number(c.schoolYear) === Number(data.currentYear) &&
+                c.term === data.currentTerm &&
+                c.day === jpDay &&
+                Number(c.period) === i
+              )
             );
 
             if (name !== "") {
@@ -232,23 +395,30 @@ function createTable() {
                 name,
                 day: jpDay,
                 period: i,
-                color
+                color,
+                schoolYear: Number(data.currentYear),
+                term: data.currentTerm
               });
             }
 
-            save();
+            await save();
             renderAll();
           });
 
           palette.appendChild(btn);
         });
 
-        input.addEventListener("change", () => {
+        input.addEventListener("change", async () => {
           const name = input.value.trim();
-          const jpDay = Object.keys(dayMap).find(k => dayMap[k] === day);
+          const jpDay = reverseDayMap[day];
 
           data.courses = data.courses.filter(
-            c => !(c.day === jpDay && c.period === i)
+            c => !(
+              Number(c.schoolYear) === Number(data.currentYear) &&
+              c.term === data.currentTerm &&
+              c.day === jpDay &&
+              Number(c.period) === i
+            )
           );
 
           if (name !== "") {
@@ -257,11 +427,13 @@ function createTable() {
               name,
               day: jpDay,
               period: i,
-              color: course ? course.color : COLORS[2]
+              color: course ? course.color : COLORS[2],
+              schoolYear: Number(data.currentYear),
+              term: data.currentTerm
             });
           }
 
-          save();
+          await save();
           renderAll();
         });
 
@@ -276,14 +448,15 @@ function createTable() {
   }
 }
 
-// スマホ版
 function renderMobile() {
   mobileView.innerHTML = "";
 
-  const days = ["月", "火", "水", "木", "金"];
+  const visibleJapaneseDays = getVisibleJapaneseDays();
   const todayKey = getTodayDayKey();
+  const currentCourses = getCurrentCourses();
+  const currentTasks = getCurrentTasks();
 
-  days.forEach(day => {
+  visibleJapaneseDays.forEach(day => {
     const dayCard = document.createElement("div");
     dayCard.className = "dayCard";
 
@@ -303,9 +476,10 @@ function renderMobile() {
     dayCard.appendChild(title);
 
     for (let period = 1; period <= 5; period++) {
-      const course = data.courses.find(c => c.day === day && c.period === period);
+      const course = currentCourses.find(
+        c => c.day === day && Number(c.period) === period
+      );
 
-      // 編集モード中は授業がなくても枠を出す
       if (!course && !editMode) continue;
 
       const courseCard = document.createElement("div");
@@ -336,11 +510,16 @@ function renderMobile() {
             btn.style.outline = "3px solid black";
           }
 
-          btn.addEventListener("click", () => {
+          btn.addEventListener("click", async () => {
             const name = input.value.trim();
 
             data.courses = data.courses.filter(
-              c => !(c.day === day && c.period === period)
+              c => !(
+                Number(c.schoolYear) === Number(data.currentYear) &&
+                c.term === data.currentTerm &&
+                c.day === day &&
+                Number(c.period) === period
+              )
             );
 
             if (name !== "") {
@@ -349,22 +528,29 @@ function renderMobile() {
                 name,
                 day,
                 period,
-                color
+                color,
+                schoolYear: Number(data.currentYear),
+                term: data.currentTerm
               });
             }
 
-            save();
+            await save();
             renderAll();
           });
 
           palette.appendChild(btn);
         });
 
-        input.addEventListener("change", () => {
+        input.addEventListener("change", async () => {
           const name = input.value.trim();
 
           data.courses = data.courses.filter(
-            c => !(c.day === day && c.period === period)
+            c => !(
+              Number(c.schoolYear) === Number(data.currentYear) &&
+              c.term === data.currentTerm &&
+              c.day === day &&
+              Number(c.period) === period
+            )
           );
 
           if (name !== "") {
@@ -373,11 +559,13 @@ function renderMobile() {
               name,
               day,
               period,
-              color: course ? course.color : COLORS[2]
+              color: course ? course.color : COLORS[2],
+              schoolYear: Number(data.currentYear),
+              term: data.currentTerm
             });
           }
 
-          save();
+          await save();
           renderAll();
         });
 
@@ -390,8 +578,8 @@ function renderMobile() {
       }
 
       if (course) {
-        data.tasks
-          .filter(task => task.courseId == course.id)
+        currentTasks
+          .filter(task => Number(task.courseId) === Number(course.id))
           .forEach(task => {
             if (task.type === "single" && task.completed) return;
 
@@ -403,10 +591,10 @@ function renderMobile() {
             checkbox.checked = task.completed;
             checkbox.className = "taskCheckbox";
 
-            checkbox.addEventListener("change", () => {
+            checkbox.addEventListener("change", async () => {
               task.completed = checkbox.checked;
               task.completedAt = checkbox.checked ? Date.now() : null;
-              save();
+              await save();
               renderAll();
             });
 
@@ -437,30 +625,29 @@ function renderMobile() {
   });
 }
 
-// PC版時間割描画
 function renderTimetable() {
-  resetWeeklyTasks();
   createTable();
 
+  const currentCourses = getCurrentCourses();
+  const currentTasks = getCurrentTasks();
+
   if (!editMode) {
-    data.courses.forEach(course => {
+    currentCourses.forEach(course => {
       const cell = document.getElementById(`${dayMap[course.day]}-${course.period}`);
       if (!cell) return;
 
       const div = document.createElement("div");
+      div.className = "courseBlock";
       div.innerHTML = `<strong>${course.name}</strong>`;
       div.style.backgroundColor = course.color;
-      div.style.padding = "5px";
-      div.style.borderRadius = "6px";
 
       cell.appendChild(div);
     });
   }
 
-  data.tasks.forEach(task => {
-    const course = data.courses.find(c => c.id == task.courseId);
+  currentTasks.forEach(task => {
+    const course = currentCourses.find(c => Number(c.id) === Number(task.courseId));
     if (!course) return;
-
     if (task.type === "single" && task.completed) return;
 
     const cell = document.getElementById(`${dayMap[course.day]}-${course.period}`);
@@ -475,10 +662,10 @@ function renderTimetable() {
     checkbox.checked = task.completed;
     checkbox.className = "taskCheckbox";
 
-    checkbox.addEventListener("change", () => {
+    checkbox.addEventListener("change", async () => {
       task.completed = checkbox.checked;
       task.completedAt = checkbox.checked ? Date.now() : null;
-      save();
+      await save();
       renderAll();
     });
 
@@ -502,11 +689,10 @@ function renderTimetable() {
   });
 }
 
-// 完了済み課題
 function renderCompleted() {
   completedList.innerHTML = "";
 
-  data.tasks.forEach(task => {
+  getCurrentTasks().forEach(task => {
     if (task.type === "single" && task.completed) {
       const li = document.createElement("li");
 
@@ -515,18 +701,18 @@ function renderCompleted() {
 
       const backBtn = document.createElement("button");
       backBtn.textContent = "戻す";
-      backBtn.onclick = () => {
+      backBtn.onclick = async () => {
         task.completed = false;
         task.completedAt = null;
-        save();
+        await save();
         renderAll();
       };
 
       const deleteBtn = document.createElement("button");
       deleteBtn.textContent = "削除";
-      deleteBtn.onclick = () => {
+      deleteBtn.onclick = async () => {
         data.tasks = data.tasks.filter(t => t.id !== task.id);
-        save();
+        await save();
         renderAll();
       };
 
@@ -539,8 +725,10 @@ function renderCompleted() {
   });
 }
 
-// 全体描画
 function renderAll() {
+  resetWeeklyTasks();
+  syncSettingsUI();
+  renderYearOptions();
   renderCourses();
 
   if (mobileMode) {
@@ -556,13 +744,64 @@ function renderAll() {
   renderCompleted();
 }
 
-// 課題追加
-addBtn.addEventListener("click", () => {
+switchViewBtn.addEventListener("click", () => {
+  mobileMode = !mobileMode;
+  switchViewBtn.textContent = mobileMode ? "PC版に切り替え" : "スマホ版に切り替え";
+  renderAll();
+});
+
+editModeBtn.addEventListener("click", () => {
+  editMode = !editMode;
+
+  editModeBtn.textContent = editMode ? "編集モード ON" : "編集モード OFF";
+  editModeBtn.style.background = editMode ? "#e53935" : "";
+
+  courseNameInput.disabled = !editMode;
+  courseDayInput.disabled = !editMode;
+  coursePeriodInput.disabled = !editMode;
+  courseColorInput.disabled = !editMode;
+  addCourseBtn.disabled = !editMode;
+
+  courseForm.style.display = editMode ? "flex" : "none";
+  courseTitle.style.display = editMode ? "block" : "none";
+
+  renderAll();
+});
+
+showSaturdayCheckbox.addEventListener("change", async () => {
+  data.settings.showSaturday = showSaturdayCheckbox.checked;
+  await save();
+  renderAll();
+});
+
+showSundayCheckbox.addEventListener("change", async () => {
+  data.settings.showSunday = showSundayCheckbox.checked;
+  await save();
+  renderAll();
+});
+
+schoolYearSelect.addEventListener("change", async () => {
+  data.currentYear = Number(schoolYearSelect.value);
+  await save();
+  renderAll();
+});
+
+termSelect.addEventListener("change", async () => {
+  data.currentTerm = termSelect.value;
+  await save();
+  renderAll();
+});
+
+addBtn.addEventListener("click", async () => {
   const title = taskTitle.value.trim();
   const courseId = Number(courseSelect.value);
   const type = taskTypeSelect.value;
 
   if (!title) return;
+  if (!courseId) {
+    alert("授業を先に選んでください");
+    return;
+  }
 
   data.tasks.push({
     id: Date.now(),
@@ -570,17 +809,17 @@ addBtn.addEventListener("click", () => {
     courseId,
     type,
     completed: false,
-    completedAt: null
+    completedAt: null,
+    schoolYear: Number(data.currentYear),
+    term: data.currentTerm
   });
 
-  save();
-  renderAll();
-
   taskTitle.value = "";
+  await save();
+  renderAll();
 });
 
-// 授業追加
-addCourseBtn.addEventListener("click", () => {
+addCourseBtn.addEventListener("click", async () => {
   if (!editMode) {
     alert("編集モードでのみ追加できます");
     return;
@@ -593,8 +832,18 @@ addCourseBtn.addEventListener("click", () => {
 
   if (!name) return;
 
+  const visibleJapaneseDays = getVisibleJapaneseDays();
+  if (!visibleJapaneseDays.includes(day)) {
+    alert("その曜日は現在表示設定でOFFになっています");
+    return;
+  }
+
   const exists = data.courses.some(
-    c => c.day === day && c.period === period
+    c =>
+      Number(c.schoolYear) === Number(data.currentYear) &&
+      c.term === data.currentTerm &&
+      c.day === day &&
+      Number(c.period) === period
   );
 
   if (exists) {
@@ -607,12 +856,58 @@ addCourseBtn.addEventListener("click", () => {
     name,
     day,
     period,
-    color
+    color,
+    schoolYear: Number(data.currentYear),
+    term: data.currentTerm
   });
 
-  save();
+  courseNameInput.value = "";
+  await save();
   renderAll();
 });
 
-// 初期描画
-renderAll();
+loginBtn.addEventListener("click", async () => {
+  try {
+    await signInWithPopup(auth, provider);
+  } catch (error) {
+    console.error(error);
+    alert("ログインに失敗しました");
+  }
+});
+
+logoutBtn.addEventListener("click", async () => {
+  try {
+    await signOut(auth);
+  } catch (error) {
+    console.error(error);
+    alert("ログアウトに失敗しました");
+  }
+});
+
+onAuthStateChanged(auth, async (user) => {
+  currentUser = user;
+
+  if (user) {
+    userInfo.textContent = `${user.displayName || "ユーザー"} でログイン中`;
+    loginBtn.style.display = "none";
+    logoutBtn.style.display = "inline-block";
+
+    try {
+      await loadCloudData(user.uid);
+    } catch (error) {
+      console.error(error);
+      alert("クラウドデータの読み込みに失敗しました");
+      data = JSON.parse(localStorage.getItem("data")) || createDefaultData();
+      normalizeData();
+    }
+  } else {
+    userInfo.textContent = "未ログイン";
+    loginBtn.style.display = "inline-block";
+    logoutBtn.style.display = "none";
+
+    data = JSON.parse(localStorage.getItem("data")) || createDefaultData();
+    normalizeData();
+  }
+
+  renderAll();
+});
