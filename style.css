@@ -169,3 +169,56 @@ td {
   white-space: normal;
   overflow: visible;
 }
+/* スマホで UI を大きくする */
+@media (max-width: 600px) {
+
+  /* セルを大きくする */
+  td {
+    min-width: 110px;   /* ← 横幅を広げる */
+    height: 120px;      /* ← 高さも広げる */
+    padding: 8px;
+  }
+
+  th {
+    min-width: 60px;
+    padding: 10px;
+    font-size: 14px;
+  }
+
+  /* 授業名 input を大きくする */
+  .cellInput {
+    width: 100px;       /* ← スマホ用に広げる */
+    height: 34px;       /* ← 高さアップ */
+    font-size: 14px;    /* ← 文字も大きく */
+  }
+
+  /* 色ボタンを押しやすくする */
+  .colorBtn {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+  }
+
+  .colorPalette {
+    gap: 6px;
+  }
+
+  /* 課題も見やすく */
+  .task {
+    font-size: 14px;
+    padding: 6px;
+  }
+
+  /* テーブルを横スクロール */
+  table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  /* フォームを縦並びに */
+  .form {
+    flex-direction: column;
+    gap: 12px;
+  }
+}
