@@ -192,37 +192,47 @@ function renderMobile() {
   const days = ["月","火","水","木","金"];
 
   days.forEach(day => {
-    const card = document.createElement("div");
-    card.className = "dayCard";
+    const dayCard = document.createElement("div");
+    dayCard.className = "dayCard";
 
     const title = document.createElement("div");
     title.className = "dayTitle";
     title.textContent = `${day}曜日`;
-    card.appendChild(title);
+    dayCard.appendChild(title);
 
+    // 授業を period 順に並べる
     data.courses
       .filter(c => c.day === day)
-      .sort((a,b) => a.period - b.period)
+      .sort((a, b) => a.period - b.period)
       .forEach(course => {
-        const div = document.createElement("div");
-        div.className = "courseCard";
-        div.style.background = course.color;
-        div.textContent = `${course.period}限：${course.name}`;
-        card.appendChild(div);
 
+        // 授業カード
+        const courseCard = document.createElement("div");
+        courseCard.className = "courseCard";
+        courseCard.style.background = course.color;
+
+        const courseTitle = document.createElement("div");
+        courseTitle.className = "courseTitle";
+        courseTitle.textContent = `${course.period}限：${course.name}`;
+        courseCard.appendChild(courseTitle);
+
+        // 課題を縦に積む
         data.tasks
           .filter(t => t.courseId == course.id)
           .forEach(task => {
-            const tdiv = document.createElement("div");
-            tdiv.className = "taskCard";
-            tdiv.textContent = task.title;
-            card.appendChild(tdiv);
+            const taskCard = document.createElement("div");
+            taskCard.className = "taskCard";
+            taskCard.textContent = task.title;
+            courseCard.appendChild(taskCard);
           });
+
+        dayCard.appendChild(courseCard);
       });
 
-    mobileView.appendChild(card);
+    mobileView.appendChild(dayCard);
   });
 }
+
 
 // PC版時間割描画
 function renderTimetable() {
