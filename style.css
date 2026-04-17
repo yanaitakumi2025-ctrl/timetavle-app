@@ -40,7 +40,8 @@ button:active {
   transform: scale(0.98);
 }
 
-input, select {
+input,
+select {
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid #ccc;
@@ -68,7 +69,8 @@ body > div {
   box-shadow: 0 2px 10px rgba(0,0,0,0.08);
 }
 
-td, th {
+td,
+th {
   border-bottom: 1px solid #eee;
   border-right: 1px solid #eee;
   padding: 12px;
@@ -76,7 +78,8 @@ td, th {
   vertical-align: top;
 }
 
-tr:last-child td {
+tr:last-child td,
+tr:last-child th {
   border-bottom: none;
 }
 
@@ -95,6 +98,24 @@ th {
 td {
   min-height: 120px;
   height: 120px;
+}
+
+.periodHeader {
+  background: #e9eef5;
+  font-weight: 700;
+}
+
+.dayHeader {
+  min-width: 88px;
+}
+
+.todayHeader {
+  background: #fff4bf;
+  font-weight: 800;
+}
+
+.todayColumn {
+  background: #fffdf2;
 }
 
 .cellInput {
@@ -148,6 +169,16 @@ td {
   cursor: pointer;
 }
 
+.taskDeleteBtn {
+  background: #e53935;
+  padding: 8px 10px;
+  font-size: 13px;
+  border-radius: 8px;
+  min-width: auto;
+  width: auto;
+  flex-shrink: 0;
+}
+
 /* スマホ版 */
 #mobileView {
   width: 100%;
@@ -161,12 +192,21 @@ td {
   box-shadow: 0 4px 14px rgba(0,0,0,0.08);
 }
 
+.todayDayCard {
+  border: 2px solid #ffd54f;
+  box-shadow: 0 6px 18px rgba(255, 193, 7, 0.2);
+}
+
 .dayTitle {
   font-size: 24px;
   font-weight: 700;
   margin-bottom: 14px;
   padding-bottom: 8px;
   border-bottom: 2px solid #eef2f7;
+}
+
+.todayDayTitle {
+  color: #b26a00;
 }
 
 .courseCard {
@@ -315,6 +355,13 @@ td {
   .colorBtn {
     width: 32px;
     height: 32px;
+  }
+
+  .taskDeleteBtn {
+    width: auto;
+    min-height: 42px;
+    padding: 8px 12px;
+    font-size: 14px;
   }
 
   #completedList li {
